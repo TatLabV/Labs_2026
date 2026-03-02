@@ -1,0 +1,92 @@
+# Импортируем pandas
+import pandas as pd
+
+# Загружаем данные Titanic
+df = pd.read_csv('https://raw.githubusercontent.com/datasciencedojo/datasets/master/titanic.csv')
+
+# Часть 1. Первичный анализ
+
+# 1. Первые 7 строк
+print("Первые 7 строк:")
+print(df.head(7))
+
+# 2. Столбцы с пропусками
+print("\nСтолбцы с пропущенными значениями:")
+missing_cols = df.columns[df.isna().any()]
+print(list(missing_cols))
+
+# 3. Общая информация
+print("\nИнформация о данных:")
+df.info()
+
+# 4. Основная статистика
+print("\nОсновные статистики:")
+print(df.describe())
+
+# 5. Средний возраст и максимальная цена билета
+print("\nСредний возраст:", round(df["Age"].mean(), 2))
+print("Максимальная цена билета:", df["Fare"].max())
+
+
+# Часть 2. Работа с возрастом
+
+# Заполняем пропуски в Age медианой
+df["Age"] = df["Age"].fillna(df["Age"].median())
+
+print("\nПропусков в Age после заполнения:", df["Age"].isna().sum())
+
+
+# Функция для создания возрастной группы
+def get_age_group(age):
+    if age < 18:
+        return "Ребенок"
+    elif age <= 65:
+        return "Взрослый"
+    else:
+        return "Пожилой"
+
+
+# Создаем новый столбец
+df["AgeGroup"] = df["Age"].apply(get_age_group)
+
+print("\nПервые 5 строк с AgeGroup:")
+print(df[["Name", "Age", "AgeGroup"]].head())
+
+
+# Часть 3. Анализ выживания
+
+# Процент выживших по полу
+print("\n% выживших по полу:")
+surv_by_sex = (df.groupby("Sex")["Survived"].mean() * 100).round(2)
+print(surv_by_sex)
+
+# Процент выживших по классу
+print("\n% выживших по классу:")
+surv_by_class = (df.groupby("Pclass")["Survived"].mean() * 100).round(2)
+print(surv_by_class)
+
+# Сводная таблица пол&класс
+print("\n% выживших (пол&класс):")
+pivot = (df.groupby(["Sex", "Pclass"])["Survived"]
+         .mean() * 100).round(2).unstack()
+print(pivot)
+
+
+# Часть 4. Фильтрация
+
+
+# Несовершеннолетние из 3 класса, которые выжили
+print("\nНесовершеннолетние из 3 класса, которые выжили:")
+q1 = df[(df["Age"] < 18) &
+        (df["Pclass"] == 3) &
+        (df["Survived"] == 1)]
+
+print(q1[["Name", "Age", "Pclass", "Survived"]])
+
+# Самый пожилой мужчина, который не выжил
+print("\nСамый пожилой мужчина, который не выжил:")
+q2 = df[(df["Sex"] == "male") &
+        (df["Survived"] == 0)]
+
+q2 = q2.sort_values("Age", ascending=False).head(1)
+print(q2[["Name", "Age", "Sex", "Pclass", "Fare", "Survived"]])
